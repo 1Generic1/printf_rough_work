@@ -1,6 +1,9 @@
 #include "main.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
+
+#define BUFFER_SIZE 1024
 
 int _printf(const char *format, ...)
 {
@@ -14,6 +17,9 @@ int _printf(const char *format, ...)
 	unsigned x;
 	int uppercase;
 	int i = 0;
+	char buffer[BUFFER_SIZE];
+	int buffer_index = 0;
+	int field_width = 0;
 
 	va_start(args, format);
 
@@ -27,6 +33,15 @@ int _printf(const char *format, ...)
 		else
 		{
 			format++;
+			if (*format >= '0' && *format <= '9')
+			{
+				field_width = 0;
+				while (*format >= '0' && *format <= '9')
+				{
+					field_width = (field_width * 10) + (*format - '0');
+					format++;
+				}
+			}
 			switch (*format)
 			{
 				case 'c':
@@ -51,7 +66,7 @@ int _printf(const char *format, ...)
 					break;
 				case 'd':
 				case 'i':
-					printed_chars += _print_integer(va_arg(args, int));
+					printed_chars += handle_flags_integer(va_arg(args, int), format[i - 1], format[i]);
 					break;
 				case 'b':
 					{
@@ -79,6 +94,12 @@ int _printf(const char *format, ...)
 						printed_chars += handle_hexadecimal_recursive(x, uppercase);
 					}
 					break;
+				case 'S':
+					handle_S(args, &printed_chars);
+					break;
+				case 'p':
+					handle_pointer(args, &printed_chars);
+					break;
 				default:
 					/*_putchar('%');
 					_putchar(*format);
@@ -87,6 +108,16 @@ int _printf(const char *format, ...)
 			}
 		}
 		format++;
+		if(buffer_index >= BUFFER_SIZE - 1)
+		{
+			write(1, buffer, buffer_index);
+			buffer_index = 0;
+		}
+		if(buffer_index > 0)
+		{
+			write(1, buffer, buffer_index);
+		}
+
 	}
 	va_end(args);
 	return (printed_chars);
